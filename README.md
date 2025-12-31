@@ -158,7 +158,7 @@ Saride Sai Raja
 
 GitHub: @SAIRAJA2005
 
-LinkedIn: [Your Profile](https://www.linkedin.com/in/sairaja-saride-b4292725b/)
+LinkedIn: [SaiRaja Saride](https://www.linkedin.com/in/sairaja-saride-b4292725b/)
 
 Built with ❤️ using React and Firebase
 
