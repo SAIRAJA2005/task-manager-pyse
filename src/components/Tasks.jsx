@@ -1,27 +1,24 @@
+
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy 
-} from 'firebase/firestore';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { db } from '../firebase';
 import Profile from './Profile';
 
-// Removed : any from props
+// const API_URL = 'https://us-central1-task-manager-pyse.cloudfunctions.net/api';
+
+const API_URL = 'https://api-x7soypxmha-uc.a.run.app';
+
 export default function Tasks({ user }) {
-  // Removed <any[]> generic type
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Helper functions for avatar (removed : string)
   const getInitialFromEmail = (email) => {
     return email?.charAt(0).toUpperCase() || '?';
   };
 
-  // Removed : string
   const getAvatarColor = (email) => {
     const colors = ['#044148', '#093665', '#0a5a7d', '#0d4d6b', '#083952'];
     const index = email?.charCodeAt(0) % colors.length;
@@ -30,10 +27,8 @@ export default function Tasks({ user }) {
 
   const fetchTasks = async () => {
     try {
-      const q = query(collection(db, `users/${user.uid}/tasks`), orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      // Removed : any
-      const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const response = await fetch(`${API_URL}/tasks?userId=${user.uid}`);
+      const data = await response.json();
       setTasks(data);
     } catch (error) {
       console.error('Fetch error:', error);
@@ -46,15 +41,21 @@ export default function Tasks({ user }) {
     fetchTasks();
   }, []);
 
-  // Removed : React.FormEvent
   const addTask = async (e) => {
     e.preventDefault();
     if (!newTask.trim()) return;
     try {
-      await addDoc(collection(db, `users/${user.uid}/tasks`), {
-        title: newTask.trim(),
-        completed: false,
-        createdAt: new Date()
+      await fetch(`${API_URL}/addTask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: {
+            title: newTask.trim(),
+            completed: false,
+            userId: user.uid,
+            createdAt: new Date()
+          }
+        })
       });
       setNewTask('');
       fetchTasks();
@@ -63,22 +64,26 @@ export default function Tasks({ user }) {
     }
   };
 
-  // Removed types from parameters
   const toggleTask = async (id, completed) => {
     try {
-      await updateDoc(doc(db, `users/${user.uid}/tasks`, id), { completed: !completed });
-      // Removed : any
+      await fetch(`${API_URL}/updateTask`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, completed: !completed, userId: user.uid })
+      });
       setTasks(tasks.map((t) => t.id === id ? { ...t, completed: !completed } : t));
     } catch (error) {
       console.error('Toggle error:', error);
     }
   };
 
-  // Removed types from parameters
   const deleteTask = async (id) => {
     try {
-      await deleteDoc(doc(db, `users/${user.uid}/tasks`, id));
-      // Removed : any
+      await fetch(`${API_URL}/deleteTask`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, userId: user.uid })
+      });
       setTasks(tasks.filter((t) => t.id !== id));
     } catch (error) {
       console.error('Delete error:', error);
@@ -102,7 +107,6 @@ export default function Tasks({ user }) {
 
   return (
     <div className="tasks-container">
-      {/* Header */}
       <div className="header">
         <div className="header-left">
           {user.photoURL ? (
@@ -136,7 +140,6 @@ export default function Tasks({ user }) {
           </div>
         </div>
 
-        {/* Desktop Menu */}
         <div className="header-actions">
           <button onClick={openProfile} className="profile-btn">
             Profile
@@ -146,7 +149,6 @@ export default function Tasks({ user }) {
           </button>
         </div>
 
-        {/* Hamburger Menu Button */}
         <button 
           className={`hamburger ${mobileMenuOpen ? 'active' : ''}`}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -157,7 +159,6 @@ export default function Tasks({ user }) {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       <div className={`mobile-menu ${mobileMenuOpen ? 'active' : ''}`}>
         <button onClick={openProfile} className="profile-btn">
           👤 Profile
@@ -167,12 +168,10 @@ export default function Tasks({ user }) {
         </button>
       </div>
 
-      {/* Profile Modal */}
       {showProfile && (
         <Profile user={user} onClose={() => setShowProfile(false)} tasks={tasks} />
       )}
 
-      {/* Add Task Form */}
       <form onSubmit={addTask} className="add-task-form">
         <input 
           type="text" 
@@ -183,7 +182,6 @@ export default function Tasks({ user }) {
         <button type="submit">Add Task</button>
       </form>
 
-      {/* Tasks List */}
       <div className="tasks-list">
         {tasks.length === 0 ? (
           <div className="empty-state">
@@ -191,7 +189,7 @@ export default function Tasks({ user }) {
             <p>Add your first task above 👆</p>
           </div>
         ) : (
-          tasks.map((task) => ( // Removed : any
+          tasks.map((task) => (
             <div key={task.id} className="task-item">
               <input 
                 type="checkbox" 
